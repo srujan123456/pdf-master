@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}PDF Info{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-info-circle"></i> PDF Information</h1>
+    <p>Get detailed information about your PDF file</p>
+</div>
+
+<div class="card">
+    <form id="infoForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file" class="file-label">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Select PDF File</span>
+            </label>
+            <input type="file" id="file" name="file" accept=".pdf" required class="file-input">
+            <div id="fileInfo" class="file-info"></div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                <i class="fas fa-info-circle"></i> Get PDF Info
+            </button>
+            <button type="reset" class="btn btn-secondary">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+    </form>
+
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Analyzing your PDF...</p>
+    </div>
+
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+    <div id="infoResult" class="info-result" style="display: none;">
+        <h3>PDF Information</h3>
+        <div id="infoContent"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('file').addEventListener('change', function(e) {
+    const fileInfo = document.getElementById('fileInfo');
+    if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        fileInfo.innerHTML = `
+            <div class="file-item">
+                <i class="fas fa-file-pdf"></i>
+                <span>${file.name}</span>
+                <span class="file-size">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+            </div>
+        `;
+    } else {
+        fileInfo.innerHTML = '';
+    }
+});
+
+document.getElementById('infoForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const file = document.getElementById('file').files[0];
+    
+    if (!file) {
+        showError('Please select a PDF file');
+        return;
+    }
+    
+    formData.append('file', file);
+    
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const errorMessage = document.getElementById('errorMessage');
+    const infoResult = document.getElementById('infoResult');
+    
+    loadingIndicator.style.display = 'block';
+    errorMessage.style.display = 'none';
+    infoResult.style.display = 'none';
+    
+    try {
+        const response = await fetch('{{ url_for("pdf_info") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayInfo(data);
+        } else {
+            const error = await response.json();
+            showError(error.error || 'An error occurred while reading PDF info');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        loadingIndicator.style.display = 'none';
+    }
+});
+
+function displayInfo(data) {
+    const infoContent = document.getElementById('infoContent');
+    const infoResult = document.getElementById('infoResult');
+    
+    let html = `
+        <div class="info-item">
+            <strong>Filename:</strong> ${data.filename}
+        </div>
+        <div class="info-item">
+            <strong>Total Pages:</strong> ${data.total_pages}
+        </div>
+        <div class="info-item">
+            <strong>Encrypted:</strong> ${data.is_encrypted ? 'Yes' : 'No'}
+        </div>
+    `;
+    
+    if (data.metadata && Object.keys(data.metadata).length > 0) {
+        html += '<div class="info-section"><strong>Metadata:</strong></div>';
+        for (const [key, value] of Object.entries(data.metadata)) {
+            html += `<div class="info-item"><strong>${key}:</strong> ${value}</div>`;
+        }
+    }
+    
+    infoContent.innerHTML = html;
+    infoResult.style.display = 'block';
+}
+
+function showError(message) {
+    const errorMessage = document.getElementById('errorMessage');
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+}
+</script>
+{% endblock %}

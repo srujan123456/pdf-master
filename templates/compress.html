@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Compress PDF{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-compress-arrows-alt"></i> Compress PDF</h1>
+    <p>Reduce PDF file size while maintaining quality</p>
+</div>
+
+<div class="card">
+    <form id="compressForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file" class="file-label">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Select PDF File</span>
+            </label>
+            <input type="file" id="file" name="file" accept=".pdf" required class="file-input">
+            <div id="fileInfo" class="file-info"></div>
+        </div>
+
+        <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <p>This tool compresses your PDF by optimizing content streams. The compression ratio depends on your PDF's content.</p>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                <i class="fas fa-compress-arrows-alt"></i> Compress PDF
+            </button>
+            <button type="reset" class="btn btn-secondary">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+    </form>
+
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Compressing your PDF...</p>
+    </div>
+
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('file').addEventListener('change', function(e) {
+    const fileInfo = document.getElementById('fileInfo');
+    if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        fileInfo.innerHTML = `
+            <div class="file-item">
+                <i class="fas fa-file-pdf"></i>
+                <span>${file.name}</span>
+                <span class="file-size">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+            </div>
+        `;
+    } else {
+        fileInfo.innerHTML = '';
+    }
+});
+
+document.getElementById('compressForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const file = document.getElementById('file').files[0];
+    
+    if (!file) {
+        showError('Please select a PDF file');
+        return;
+    }
+    
+    formData.append('file', file);
+    
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    loadingIndicator.style.display = 'block';
+    errorMessage.style.display = 'none';
+    
+    try {
+        const response = await fetch('{{ url_for("compress_pdf") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'compressed.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            this.reset();
+            document.getElementById('fileInfo').innerHTML = '';
+        } else {
+            const error = await response.json();
+            showError(error.error || 'An error occurred while compressing PDF');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        loadingIndicator.style.display = 'none';
+    }
+});
+
+function showError(message) {
+    const errorMessage = document.getElementById('errorMessage');
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+}
+</script>
+{% endblock %}

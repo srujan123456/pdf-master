@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Merge PDFs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-compress"></i> Merge PDFs</h1>
+    <p>Combine multiple PDF files into a single document</p>
+</div>
+
+<div class="card">
+    <form id="mergeForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="files" class="file-label">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Select PDF Files</span>
+                <small>You can select multiple files (Ctrl+Click or Cmd+Click)</small>
+            </label>
+            <input type="file" id="files" name="files" multiple accept=".pdf" required class="file-input">
+            <div id="fileList" class="file-list"></div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                <i class="fas fa-compress"></i> Merge PDFs
+            </button>
+            <button type="reset" class="btn btn-secondary">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+    </form>
+
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing your PDFs...</p>
+    </div>
+
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('files').addEventListener('change', function(e) {
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
+    
+    Array.from(e.target.files).forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <i class="fas fa-file-pdf"></i>
+            <span>${file.name}</span>
+            <span class="file-size">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+        `;
+        fileList.appendChild(fileItem);
+    });
+});
+
+document.getElementById('mergeForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const files = document.getElementById('files').files;
+    
+    if (files.length === 0) {
+        showError('Please select at least one PDF file');
+        return;
+    }
+    
+    for (let file of files) {
+        formData.append('files', file);
+    }
+    
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    loadingIndicator.style.display = 'block';
+    errorMessage.style.display = 'none';
+    
+    try {
+        const response = await fetch('{{ url_for("merge_pdfs") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'merged.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // Reset form
+            this.reset();
+            document.getElementById('fileList').innerHTML = '';
+        } else {
+            const error = await response.json();
+            showError(error.error || 'An error occurred while merging PDFs');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        loadingIndicator.style.display = 'none';
+    }
+});
+
+function showError(message) {
+    const errorMessage = document.getElementById('errorMessage');
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+}
+</script>
+{% endblock %}

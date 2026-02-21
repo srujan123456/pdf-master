@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">
+            <i class="fas fa-file-pdf"></i>
+            PDF Master
+        </h1>
+        <p class="hero-subtitle">Powerful PDF tools at your fingertips</p>
+        <p class="hero-description">Merge, split, rotate, extract, compress, and analyze PDFs with ease</p>
+    </div>
+</div>
+
+<div class="tools-grid">
+    <div class="tool-card">
+        <div class="tool-icon">
+            <i class="fas fa-compress"></i>
+        </div>
+        <h3>Merge PDFs</h3>
+        <p>Combine multiple PDF files into a single document</p>
+        <a href="{{ url_for('merge_pdfs') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-right"></i> Merge Now
+        </a>
+    </div>
+
+    <div class="tool-card">
+        <div class="tool-icon">
+            <i class="fas fa-cut"></i>
+        </div>
+        <h3>Split PDF</h3>
+        <p>Split PDF into individual pages or custom ranges</p>
+        <a href="{{ url_for('split_pdf') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-right"></i> Split Now
+        </a>
+    </div>
+
+    <div class="tool-card">
+        <div class="tool-icon">
+            <i class="fas fa-redo"></i>
+        </div>
+        <h3>Rotate PDF</h3>
+        <p>Rotate pages in your PDF document</p>
+        <a href="{{ url_for('rotate_pdf') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-right"></i> Rotate Now
+        </a>
+    </div>
+
+    <div class="tool-card">
+        <div class="tool-icon">
+            <i class="fas fa-scissors"></i>
+        </div>
+        <h3>Extract Pages</h3>
+        <p>Extract specific pages from a PDF document</p>
+        <a href="{{ url_for('extract_pages') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-right"></i> Extract Now
+        </a>
+    </div>
+
+    <div class="tool-card">
+        <div class="tool-icon">
+            <i class="fas fa-compress-arrows-alt"></i>
+        </div>
+        <h3>Compress PDF</h3>
+        <p>Reduce PDF file size while maintaining quality</p>
+        <a href="{{ url_for('compress_pdf') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-right"></i> Compress Now
+        </a>
+    </div>
+
+    <div class="tool-card">
+        <div class="tool-icon">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <h3>PDF Info</h3>
+        <p>Get detailed information about your PDF file</p>
+        <a href="{{ url_for('pdf_info') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-right"></i> Get Info
+        </a>
+    </div>
+</div>
+
+<div class="features-section">
+    <h2 class="section-title">Features</h2>
+    <div class="features-grid">
+        <div class="feature-item">
+            <i class="fas fa-shield-alt"></i>
+            <h4>Secure</h4>
+            <p>All processing happens on your server. Files are automatically deleted after processing.</p>
+        </div>
+        <div class="feature-item">
+            <i class="fas fa-bolt"></i>
+            <h4>Fast</h4>
+            <p>Quick processing with efficient algorithms for all PDF operations.</p>
+        </div>
+        <div class="feature-item">
+            <i class="fas fa-mobile-alt"></i>
+            <h4>Responsive</h4>
+            <p>Works seamlessly on desktop, tablet, and mobile devices.</p>
+        </div>
+        <div class="feature-item">
+            <i class="fas fa-dollar-sign"></i>
+            <h4>Free</h4>
+            <p>All tools are completely free to use with no limitations.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

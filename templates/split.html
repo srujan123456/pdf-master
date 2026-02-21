@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Split PDF{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-cut"></i> Split PDF</h1>
+    <p>Split your PDF into individual pages or custom ranges</p>
+</div>
+
+<div class="card">
+    <form id="splitForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file" class="file-label">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Select PDF File</span>
+            </label>
+            <input type="file" id="file" name="file" accept=".pdf" required class="file-input">
+            <div id="fileInfo" class="file-info"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Split Mode</label>
+            <div class="radio-group">
+                <label class="radio-label">
+                    <input type="radio" name="split_mode" value="all" checked>
+                    <span>Split into individual pages</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="split_mode" value="range">
+                    <span>Split by page ranges (e.g., 1-5, 6-10, 11-15)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group" id="rangeGroup" style="display: none;">
+            <label for="ranges">Page Ranges</label>
+            <input type="text" id="ranges" name="ranges" placeholder="1-5, 6-10, 11-15" class="form-input">
+            <small class="form-help">Enter page ranges separated by commas (e.g., 1-5, 6-10)</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                <i class="fas fa-cut"></i> Split PDF
+            </button>
+            <button type="reset" class="btn btn-secondary">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+    </form>
+
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing your PDF...</p>
+    </div>
+
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelector('input[name="split_mode"]').addEventListener('change', function(e) {
+    const rangeGroup = document.getElementById('rangeGroup');
+    if (e.target.value === 'range') {
+        rangeGroup.style.display = 'block';
+    } else {
+        rangeGroup.style.display = 'none';
+    }
+});
+
+document.getElementById('file').addEventListener('change', function(e) {
+    const fileInfo = document.getElementById('fileInfo');
+    if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        fileInfo.innerHTML = `
+            <div class="file-item">
+                <i class="fas fa-file-pdf"></i>
+                <span>${file.name}</span>
+                <span class="file-size">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+            </div>
+        `;
+    } else {
+        fileInfo.innerHTML = '';
+    }
+});
+
+document.getElementById('splitForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const file = document.getElementById('file').files[0];
+    
+    if (!file) {
+        showError('Please select a PDF file');
+        return;
+    }
+    
+    formData.append('file', file);
+    
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    loadingIndicator.style.display = 'block';
+    errorMessage.style.display = 'none';
+    
+    try {
+        const response = await fetch('{{ url_for("split_pdf") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'split_pdf.zip';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            this.reset();
+            document.getElementById('fileInfo').innerHTML = '';
+            document.getElementById('rangeGroup').style.display = 'none';
+        } else {
+            const error = await response.json();
+            showError(error.error || 'An error occurred while splitting PDF');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+    } finally {
+        loadingIndicator.style.display = 'none';
+    }
+});
+
+function showError(message) {
+    const errorMessage = document.getElementById('errorMessage');
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+}
+</script>
+{% endblock %}
